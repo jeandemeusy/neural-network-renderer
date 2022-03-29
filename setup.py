@@ -5,16 +5,16 @@ with open("README.md", "r") as fh:
 
 
 setuptools.setup(
-    name="neural-network-renderer",
-    version="0.1",
-    scripts=["bin/neural-network-renderer"],
+    name="neural_network_renderer",
+    version="0.2.1",
+    scripts=["bin/neural_network_renderer"],
     author="Jean Demeusy",
     author_email="dev.jdu@gmail.com",
     description="A usefull CNN/DenseNet visualization tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jeandemeusy/neural-network-renderer",
-    packages=["neural-network-renderer"],
+    packages=["neural_network_renderer"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

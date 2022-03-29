@@ -5,4 +5,6 @@
 **/venv
 *.DS_Store
 **/assets
+**/dist
 
+*.egg-info
