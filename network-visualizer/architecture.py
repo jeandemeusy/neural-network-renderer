@@ -1,10 +1,10 @@
+import subprocess
 from pathlib import Path
-from re import T
+from sys import platform
 
 from .colors import Colors
 from .layers import Begin, End, Head, Layer
-from .styles import Ball, Box, RightBandedBox, PDFExport
-import subprocess
+from .styles import Ball, Box, PDFExport, RightBandedBox
 
 
 class Architecture:
@@ -19,11 +19,11 @@ class Architecture:
     def lastname(self):
         return self.layers_list[-1].name
 
-    def generate(self, pathname="file.tex"):
-        path = Path(pathname)
+    def to_pdf(self, pathname: str):
+        path = Path(f"{pathname}.tex")
         path.parents[0].mkdir(parents=True, exist_ok=True)
 
-        with open(pathname, "w") as f:
+        with open(path, "w") as f:
             f.write(Head(".").text())
             f.write(Colors().text())
             f.write(Begin().text())
@@ -43,8 +43,17 @@ class Architecture:
         RightBandedBox().generate()
         Box().generate()
 
-        PDFExport("to_pdf.sh").export(path)
+        PDFExport("to_pdf.sh").export(pathname)
 
-        process = subprocess.Popen("bash to_pdf.sh main", shell=True)
-        process.wait()
+        subprocess.Popen(f"bash to_pdf.sh {pathname}", shell=True).wait()
+
         Path("to_pdf.sh").unlink()
+
+        if platform == "linux" or platform == "linux2":
+            subprocess.Popen(["xdg-open", f"{pathname}.pdf"])
+        elif platform == "darwin":
+            subprocess.Popen(["open", f"{pathname}.pdf"])
+        elif platform == "win32":
+            subprocess.Popen(["start", f"{pathname}.pdf"])
+        else:
+            raise EnvironmentError("Unknown platform")

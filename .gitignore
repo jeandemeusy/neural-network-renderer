@@ -1,6 +1,8 @@
 **/__pycache__
 **/.ipynb_checkpoints
 
-main.pdf
+*.pdf
 **/venv
 *.DS_Store
+**/assets
+

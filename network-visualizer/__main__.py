@@ -1,9 +1,6 @@
-import sys
-from pathlib import Path
-
-from network_layer.architecture import Architecture
-from network_layer.colors import Colors
-from network_layer.layers import (
+from .architecture import Architecture
+from .colors import Colors
+from .layers import (
     Conv,
     ConvConvRelu,
     Dense,
@@ -49,7 +46,7 @@ def main():
     arch.add(DottedLines("gpa", "flatten"))
     arch.add(DottedLines("flatten", "output"))
 
-    arch.generate(f"{Path(sys.argv[0]).stem}.tex")
+    arch.to_pdf("output_file")
 
 
 if __name__ == "__main__":

@@ -313,16 +313,14 @@ class PDFExport:
     def __init__(self, filename):
         self.filename = filename
 
-    def export(self, path):
-        #  > /dev/null 2>&1
-
+    def export(self, pathname):
         bash_command = r"""
-        pdflatex FILEROOT.tex
+        pdflatex FILEROOT.tex > /dev/null 2>&1
 
         rm *.aux *.log *.tex *.sty
         """
 
-        bash_command = bash_command.replace("FILEROOT", path.stem)
+        bash_command = bash_command.replace("FILEROOT", pathname)
 
         with open(self.filename, "w") as f:
             f.write(bash_command)

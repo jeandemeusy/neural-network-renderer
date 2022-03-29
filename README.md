@@ -63,7 +63,3 @@ The rendering is started with this command:
 bash to_pdf.sh main
 ```
 where `main` is the name of the python file.
-
-**Result:**
-
-![results](./assets/results.png)
