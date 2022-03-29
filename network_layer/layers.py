@@ -2,7 +2,7 @@ import os
 from math import sqrt
 
 
-class Layers:
+class Layer:
     def __init__(self, name: str):
         self.hidden_name = name
 
@@ -14,46 +14,36 @@ class Layers:
         return
 
 
-class Head(Layers):
+class Head(Layer):
     def __init__(self, projectpath: str):
         self.path = projectpath
         self.hidden_name = "head"
 
     def text(self, depth_factor: float = 1.0, idx: int = None):
-        pathlayers = os.path.join(self.path, "layers/").replace("\\", "/")
         text = r"""
-        \documentclass[border=8pt, multi, tikz]{standalone} 
+        \documentclass[border=8pt, multi, tikz, convert]{standalone} 
         \usepackage{import}
         \usepackage{graphicx}
         \usepackage[export]{adjustbox}
-        \subimport{LAYERS_PATH}{init}
         \usetikzlibrary{positioning}
         \usetikzlibrary{3d}
         \usepackage{etoolbox}% provides \preto
+
+        \usetikzlibrary{quotes,arrows.meta}
+        \usetikzlibrary{positioning}
+
+        \def\edgecolor{rgb:blue,5;red,5;green,5;black,3}
+        \newcommand{\midarrow}{\tikz \draw[-Stealth,line width =0.4mm,draw=\edgecolor] (-0.3,0) -- ++(0.3,0);}
+
+        \usepackage{Ball}
+        \usepackage{Box}
+        \usepackage{RightBandedBox}
         """
 
-        return text.replace("LAYERS_PATH", pathlayers)
+        return text
 
 
-class Colors(Layers):
-    def __init__(self):
-        self.hidden_name = "colors"
-
-    def text(self, depth_factor: float = 1.0, idx: int = None):
-        return r"""
-        \def\ConvColor{rgb:yellow,5;red,2.5;white,5}
-        \def\ConvReluColor{rgb:yellow,5;red,5;white,5}
-        \def\PoolColor{rgb:red,1;black,0.3}
-        \def\UnpoolColor{rgb:blue,2;green,1;black,0.3}
-        \def\FcColor{rgb:blue,5;red,2.5;white,5}
-        \def\FcReluColor{rgb:blue,5;red,5;white,4}
-        \def\SoftmaxColor{rgb:white,2;black,4}   
-        \def\DenseColor{rgb:white,2;black,4}   
-        \def\SumColor{rgb:blue,5;green,15}
-        """
-
-
-class Begin(Layers):
+class Begin(Layer):
     def __init__(self):
         self.hidden_name = "begin"
 
@@ -68,7 +58,7 @@ class Begin(Layers):
         """
 
 
-class Input(Layers):
+class Input(Layer):
     def __init__(self, pathfile, shape: list[int], to="(0,0,0)", name="temp"):
         self.hidden_name = name
         self.pathfile = pathfile
@@ -90,10 +80,9 @@ class Input(Layers):
         return base_text
 
 
-class Conv(Layers):
+class Conv(Layer):
     def __init__(
         self,
-        shape: list[int],
         s_filter=256,
         n_filter=64,
         name: str = None,
@@ -107,9 +96,9 @@ class Conv(Layers):
         self.n_filter = n_filter
         self.offset = offset
         self.to = to
-        self.width = shape[0]
-        self.height = shape[1]
-        self.depth = shape[2]
+        self.width = self.s_filter
+        self.height = self.s_filter
+        self.depth = n_filter
         self.opacity = opacity
         self.caption = caption
 
@@ -139,7 +128,7 @@ class Conv(Layers):
         return base_text
 
 
-class Spacer(Layers):
+class Spacer(Layer):
     def __init__(self, name: str = None, width: int = 15):
         self.hidden_name = name
         self.width = width
@@ -174,27 +163,27 @@ class Spacer(Layers):
         return base_text
 
 
-class ConvConvRelu(Layers):
+class ConvConvRelu(Layer):
     def __init__(
         self,
-        name,
-        s_filer=256,
-        n_filer=(64, 64),
+        # shape: list[int],
+        s_filter=256,
+        n_filter=64,
+        name: str = None,
         offset="(0,0,0)",
         to=None,
-        width=(2, 2),
-        height=40,
-        depth=40,
+        opacity=0.9,
         caption=" ",
     ):
         self.hidden_name = name
-        self.s_filer = s_filer
-        self.n_filer = n_filer
+        self.s_filter = s_filter
+        self.n_filter = ",".join([str(val) for val in n_filter])
         self.offset = offset
         self.to = to
-        self.width = width
-        self.height = height
-        self.depth = depth
+        self.width = self.s_filter
+        self.height = self.s_filter
+        self.depth = [val for val in n_filter]
+        self.opacity = opacity
         self.caption = caption
 
     def text(self, depth_factor: float = 1.0, idx: int = None):
@@ -204,12 +193,12 @@ class ConvConvRelu(Layers):
             RightBandedBox={
                 name=NAME,
                 caption=CAPTION,
-                xlabel={{ N_FILER_0, N_FILER_1 }},
-                zlabel=S_FILER,
+                xlabel={{ N_FILTER }},
+                zlabel=S_FILTER,
                 fill=\ConvColor,
                 bandfill=\ConvReluColor,
                 height=HEIGHT,
-                width={ WIDTH_0 , WIDTH_1 },
+                width={ WIDTH },
                 depth=DEPTH
             }
         };
@@ -220,25 +209,25 @@ class ConvConvRelu(Layers):
 
         base_text = base_text.replace("NAME", self.name)
         base_text = base_text.replace("OFFSET", self.offset)
-        base_text = base_text.replace("N_FILER_0", str(self.n_filer[0]))
-        base_text = base_text.replace("N_FILER_1", str(self.n_filer[1]))
-        base_text = base_text.replace("S_FILER", str(self.s_filer))
+        base_text = base_text.replace("N_FILTER", self.n_filter)
+        base_text = base_text.replace("S_FILTER", str(self.s_filter))
         base_text = base_text.replace("TO", self.to)
-        base_text = base_text.replace("WIDTH_0", str(self.width[0]))
-        base_text = base_text.replace("WIDTH_1", str(self.width[1]))
+        base_text = base_text.replace(
+            "WIDTH", ",".join([str(val * depth_factor) for val in self.depth])
+        )
         base_text = base_text.replace("HEIGHT", str(self.height))
-        base_text = base_text.replace("DEPTH", str(self.depth))
+        base_text = base_text.replace("DEPTH", str(self.width))
         base_text = base_text.replace("CAPTION", str(self.caption))
 
         return base_text
 
 
-class Pool(Layers):
+class Pool(Layer):
     def __init__(
         self,
         shape: list[int],
         name: str = None,
-        offset: str = "(0.5,0,0)",
+        offset: str = "(0,0,0)",
         to=None,
         opacity=0.75,
         caption=" ",
@@ -283,7 +272,7 @@ class Pool(Layers):
         return base_text
 
 
-class UnPool(Layers):
+class UnPool(Layer):
     def __init__(
         self,
         name,
@@ -325,7 +314,7 @@ class UnPool(Layers):
         base_text = base_text.replace("NAME", self.name)
         base_text = base_text.replace("OFFSET", self.offset)
         base_text = base_text.replace("TO", self.to)
-        base_text = base_text.replace("WIDTH", str(self.width))
+        base_text = base_text.replace("WIDTH", str(depth_factor * self.width))
         base_text = base_text.replace("HEIGHT", str(self.height))
         base_text = base_text.replace("DEPTH", str(self.depth))
         base_text = base_text.replace("CAPTION", str(self.caption))
@@ -334,7 +323,7 @@ class UnPool(Layers):
         return base_text
 
 
-class ConvRes(Layers):
+class ConvRes(Layer):
     def __init__(
         self,
         name,
@@ -386,7 +375,7 @@ class ConvRes(Layers):
         base_text = base_text.replace("S_FILER", str(self.s_filer))
         base_text = base_text.replace("OFFSET", self.offset)
         base_text = base_text.replace("TO", self.to)
-        base_text = base_text.replace("WIDTH", str(self.width))
+        base_text = base_text.replace("WIDTH", str(depth_factor * self.width))
         base_text = base_text.replace("HEIGHT", str(self.height))
         base_text = base_text.replace("DEPTH", str(self.depth))
         base_text = base_text.replace("CAPTION", str(self.caption))
@@ -394,46 +383,60 @@ class ConvRes(Layers):
 
         return base_text
 
-    # def conv_softmax(
-    #     cls,
-    #     name,
-    #     s_filer=40,
-    #     offset="(0,0,0)",
-    #     to=None,
-    #     width=1,
-    #     height=40,
-    #     depth=40,
-    #     caption=" ",
-    # ):
 
-    #     base_text = r"""
-    #     \pic[shift={OFFSET}] at TO
-    #     {
-    #         Box={
-    #             name=NAME,
-    #             caption=CAPTION,
-    #             zlabel=S_FILER,
-    #             fill=\SoftmaxColor,
-    #             height=HEIGHT,
-    #             width=WIDTH,
-    #             depth=DEPTH
-    #         }
-    #     };
-    #     """
+class ConvSoftmax(Layer):
+    def __init__(
+        self,
+        name,
+        s_filer=40,
+        offset="(0,0,0)",
+        to=None,
+        width=1,
+        height=40,
+        depth=40,
+        caption=" ",
+    ):
+        self.hidden_name = name
+        self.s_filer = s_filer
+        self.offset = offset
+        self.to = to
+        self.width = width
+        self.height = height
+        self.depth = depth
+        self.caption = caption
 
-    #     base_text = base_text.replace("NAME", name)
-    #     base_text = base_text.replace("S_FILER", str(s_filer))
-    #     base_text = base_text.replace("OFFSET", offset)
-    #     base_text = base_text.replace("TO", to)
-    #     base_text = base_text.replace("WIDTH", str(width))
-    #     base_text = base_text.replace("HEIGHT", str(height))
-    #     base_text = base_text.replace("DEPTH", str(depth))
-    #     base_text = base_text.replace("CAPTION", str(caption))
+    def text(self, depth_factor: float = 1.0, idx: int = None):
+        base_text = r"""
+        \pic[shift={OFFSET}] at TO
+        {
+            Box={
+                name=NAME,
+                caption=CAPTION,
+                zlabel=S_FILER,
+                fill=\SoftmaxColor,
+                height=HEIGHT,
+                width=WIDTH,
+                depth=DEPTH
+            }
+        };
+        """
 
-    #     return base_text
+        if not self.name:
+            self.hidden_name = f"convsoftmax_{idx}"
+
+        base_text = base_text.replace("NAME", self.name)
+        base_text = base_text.replace("S_FILER", str(self.s_filer))
+        base_text = base_text.replace("OFFSET", self.offset)
+        base_text = base_text.replace("TO", self.to)
+        base_text = base_text.replace("WIDTH", str(depth_factor * self.width))
+        base_text = base_text.replace("HEIGHT", str(self.height))
+        base_text = base_text.replace("DEPTH", str(self.depth))
+        base_text = base_text.replace("CAPTION", str(self.caption))
+
+        return base_text
 
 
-class Softmax(Layers):
+class Softmax(Layer):
     def __init__(
         self,
         shape: int,
@@ -448,8 +451,8 @@ class Softmax(Layers):
         self.s_filer = s_filer
         self.offset = offset
         self.to = to
-        self.width = 1
-        self.height = 1
+        self.width = 2
+        self.height = 2
         self.depth = shape
         self.caption = caption
         self.opacity = opacity
@@ -487,10 +490,9 @@ class Softmax(Layers):
         return base_text
 
 
-class Dense(Layers):
+class Dense(Layer):
     def __init__(
         self,
-        shape: int,
         s_filer: int = 10,
         name: str = None,
         offset: str = "(0,0,0)",
@@ -502,9 +504,9 @@ class Dense(Layers):
         self.s_filer = s_filer
         self.offset = offset
         self.to = to
-        self.width = 1
-        self.height = 1
-        self.depth = shape
+        self.width = 2
+        self.height = 2
+        self.depth = s_filer
         self.caption = caption
         self.opacity = opacity
 
@@ -541,52 +543,96 @@ class Dense(Layers):
 
         return base_text
 
-    # @classmethod
-    # def sum(
-    #     cls,
-    #     name: str,
-    #     offset: str = "(0,0,0)",
-    #     to: str = "(0,0,0)",
-    #     radius: float = 2.5,
-    #     opacity: float = 0.6,
-    # ):
-    #     base_text = r"""
-    #     \pic[shift={OFFSET}] at TO
-    #     {
-    #         Ball={
-    #             name=NAME,
-    #             fill=\SumColor,
-    #             opacity=OPACITY,
-    #             radius=RADIUS,
-    #             logo=$+$
-    #         }
-    #     };
-    #     """
 
-    #     base_text = base_text.replace("NAME", name)
-    #     base_text = base_text.replace("OFFSET", offset)
-    #     base_text = base_text.replace("TO", to)
-    #     base_text = base_text.replace("RADIUS", str(radius))
-    #     base_text = base_text.replace("OPACITY", str(opacity))
+class Sum(Layer):
+    def __init__(
+        self,
+        name: str,
+        offset: str = "(0,0,0)",
+        to: str = "(0,0,0)",
+        radius: float = 2.5,
+        opacity: float = 0.6,
+    ):
+        self.name = name
+        self.offset = offset
+        self.to = to
+        self.radius = radius
+        self.opacity = opacity
 
-    #     return base_text
+    def text(self, depth_factor: float = 1.0, idx: int = None):
+        base_text = r"""
+        \pic[shift={OFFSET}] at TO
+        {
+            Ball={
+                name=NAME,
+                fill=\SumColor,
+                opacity=OPACITY,
+                radius=RADIUS,
+                logo=$+$
+            }
+        };
+        """
 
-    # @classmethod
-    # def skip(cls, of: str, to: str, pos: float = 1.25):
-    #     base_text = r"""
-    #     \path (OF-southeast) -- (OF-northeast) coordinate[pos=POS] (OF-top);
-    #     \path (TO-south)  -- (TO-north) coordinate[pos=POS] (TO-top);
-    #     \draw [copyconnection] (OF-northeast) -- node {\copymidarrow}(OF-top) -- node {\copymidarrow}(TO-top) -- node {\copymidarrow}(TO-north);
-    #     """
+        if not self.name:
+            self.hidden_name = f"sum_{idx}"
 
-    #     base_text = base_text.replace("OF", of)
-    #     base_text = base_text.replace("TO", to)
-    #     base_text = base_text.replace("POS", str(pos))
+        base_text = base_text.replace("NAME", self.ame)
+        base_text = base_text.replace("OFFSET", self.offset)
+        base_text = base_text.replace("TO", self.to)
+        base_text = base_text.replace("RADIUS", str(self.radius))
+        base_text = base_text.replace("OPACITY", str(self.opacity))
 
-    #     return base_text
+        return base_text
 
 
-class End(Layers):
+class Skip(Layer):
+    def __init__(self, of: str, to: str, pos: float = 1.25):
+        self.name = None
+        self.of = of
+        self.to = to
+        self.pos = pos
+
+    def text(self, depth_factor: float = 1, idx: int = None):
+        base_text = r"""
+        \path (OF-southeast) -- (OF-northeast) coordinate[pos=POS] (OF-top);
+        \path (TO-south)  -- (TO-north) coordinate[pos=POS] (TO-top);
+        \draw [copyconnection] (OF-northeast) -- node {\copymidarrow}(OF-top) -- node {\copymidarrow}(TO-top) -- node {\copymidarrow}(TO-north);
+        """
+        if not self.name:
+            self.hidden_name = f"skip_{self.of}_to_{self.to}"
+
+        base_text = base_text.replace("OF", self.of)
+        base_text = base_text.replace("TO", self.to)
+        base_text = base_text.replace("POS", str(self.pos))
+
+        return base_text
+
+
+class DottedLines(Layer):
+    def __init__(self, of: str, to: str):
+        self.hidden_name = None
+        self.of = of
+        self.to = to
+
+    def text(self, depth_factor: float = 1, idx: int = None):
+        base_text = r"""
+        \draw[densely dashed]
+        (OF-nearnortheast) -- (TO-nearnorthwest)
+        (OF-nearsoutheast) -- (TO-nearsouthwest)
+        (OF-farsoutheast)  -- (TO-farsouthwest)
+        (OF-farnortheast)  -- (TO-farnorthwest)
+        ;"""
+
+        if not self.name:
+            self.hidden_name = f"dotted_lines_{self.of}_to_{self.to}"
+
+        base_text = base_text.replace("OF", self.of)
+        base_text = base_text.replace("TO", self.to)
+
+        return base_text
+
+
+class End(Layer):
     def __init__(self):
         self.hidden_name = "end"
 
@@ -595,142 +641,3 @@ class End(Layers):
         \end{tikzpicture}
         \end{document}
         """
-
-    # @classmethod
-    # def block_2ConvPool(
-    #     cls,
-    #     name,
-    #     botton,
-    #     top,
-    #     s_filer=256,
-    #     n_filer=64,
-    #     offset="(1,0,0)",
-    #     size=(32, 32, 3.5),
-    #     opacity=0.5,
-    # ):
-    #     return [
-    #         Layers.conv_conv_relu(
-    #             name="ccr_{}".format(name),
-    #             s_filer=str(s_filer),
-    #             n_filer=(n_filer, n_filer),
-    #             offset=offset,
-    #             to="({}-east)".format(botton),
-    #             width=(size[2], size[2]),
-    #             height=size[0],
-    #             depth=size[1],
-    #         ),
-    #         Layers.pool(
-    #             name="{}".format(top),
-    #             offset="(0,0,0)",
-    #             to="(ccr_{}-east)".format(name),
-    #             width=1,
-    #             height=size[0] - int(size[0] / 4),
-    #             depth=size[1] - int(size[0] / 4),
-    #             opacity=opacity,
-    #         ),
-    #         Layers.connection("{}".format(botton), "ccr_{}".format(name)),
-    #     ]
-
-    # @classmethod
-    # def block_Unconv(
-    #     cls,
-    #     name,
-    #     botton,
-    #     top,
-    #     s_filer=256,
-    #     n_filer=64,
-    #     offset="(1,0,0)",
-    #     size=(32, 32, 3.5),
-    #     opacity=0.5,
-    # ):
-    #     return [
-    #         Layers.unpool(
-    #             name="unpool_{}".format(name),
-    #             offset=offset,
-    #             to="({}-east)".format(botton),
-    #             width=1,
-    #             height=size[0],
-    #             depth=size[1],
-    #             opacity=opacity,
-    #         ),
-    #         Layers.conv_res(
-    #             name="ccr_res_{}".format(name),
-    #             offset="(0,0,0)",
-    #             to="(unpool_{}-east)".format(name),
-    #             s_filer=str(s_filer),
-    #             n_filer=str(n_filer),
-    #             width=size[2],
-    #             height=size[0],
-    #             depth=size[1],
-    #             opacity=opacity,
-    #         ),
-    #         Layers.conv(
-    #             name="ccr_{}".format(name),
-    #             offset="(0,0,0)",
-    #             to="(ccr_res_{}-east)".format(name),
-    #             s_filer=str(s_filer),
-    #             n_filer=str(n_filer),
-    #             width=size[2],
-    #             height=size[0],
-    #             depth=size[1],
-    #         ),
-    #         Layers.conv_res(
-    #             name="ccr_res_c_{}".format(name),
-    #             offset="(0,0,0)",
-    #             to="(ccr_{}-east)".format(name),
-    #             s_filer=str(s_filer),
-    #             n_filer=str(n_filer),
-    #             width=size[2],
-    #             height=size[0],
-    #             depth=size[1],
-    #             opacity=opacity,
-    #         ),
-    #         Layers.conv(
-    #             name="{}".format(top),
-    #             offset="(0,0,0)",
-    #             to="(ccr_res_c_{}-east)".format(name),
-    #             s_filer=str(s_filer),
-    #             n_filer=str(n_filer),
-    #             width=size[2],
-    #             height=size[0],
-    #             depth=size[1],
-    #         ),
-    #         Layers.connection("{}".format(botton), "unpool_{}".format(name)),
-    #     ]
-
-    # @classmethod
-    # def block_Res(
-    #     cls,
-    #     num,
-    #     name,
-    #     botton,
-    #     top,
-    #     s_filer=256,
-    #     n_filer=64,
-    #     offset="(0,0,0)",
-    #     size=(32, 32, 3.5),
-    #     opacity=0.5,
-    # ):
-    #     lys = []
-    #     layers = [*["{}_{}".format(name, i) for i in range(num - 1)], top]
-    #     for name in layers:
-    #         ly = [
-    #             Layers.conv(
-    #                 name="{}".format(name),
-    #                 offset=offset,
-    #                 to="({}-east)".format(botton),
-    #                 s_filer=str(s_filer),
-    #                 n_filer=str(n_filer),
-    #                 width=size[2],
-    #                 height=size[0],
-    #                 depth=size[1],
-    #             ),
-    #             Layers.connection("{}".format(botton), "{}".format(name)),
-    #         ]
-    #         botton = name
-    #         lys += ly
-
-    #     lys += [
-    #         Layers.skip(of=layers[1], to=layers[-2], pos=1.25),
-    #     ]
-    #     return lys

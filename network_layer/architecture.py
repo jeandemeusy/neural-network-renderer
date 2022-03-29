@@ -1,13 +1,18 @@
 from pathlib import Path
-from .layers import Head, Colors, Begin, End, Layers
+from re import T
+
+from .colors import Colors
+from .layers import Begin, End, Head, Layer
+from .styles import Ball, Box, RightBandedBox, PDFExport
+import subprocess
 
 
 class Architecture:
     def __init__(self, depth_factor: float):
-        self.layers_list: list[Layers] = []
+        self.layers_list: list[Layer] = []
         self.depth_factor = depth_factor
 
-    def add(self, layer: Layers):
+    def add(self, layer: Layer):
         self.layers_list.append(layer)
 
     @property
@@ -33,3 +38,13 @@ class Architecture:
                 last_to = f"({c.name}-east)"
 
             f.write(End().text())
+
+        Ball().generate()
+        RightBandedBox().generate()
+        Box().generate()
+
+        PDFExport("to_pdf.sh").export(path)
+
+        process = subprocess.Popen("bash to_pdf.sh main", shell=True)
+        process.wait()
+        Path("to_pdf.sh").unlink()
