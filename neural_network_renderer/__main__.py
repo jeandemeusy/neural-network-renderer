@@ -19,7 +19,7 @@ def main():
     arch = Architecture(4 / 32)
 
     # input
-    arch.add(Input("assets/input_def_crop.png", shape=[64, 64]))
+    # arch.add(Input("assets/input_def_crop.png", shape=[64, 64]))
 
     # first layer
     arch.add(ConvConvRelu(s_filter=64, n_filter=[32, 32], to="(5,0,0)"))

@@ -1,3 +1,7 @@
+from pathlib import Path
+from sys import platform
+
+
 class Style:
     def __init__(self):
         self.filename = ""
@@ -6,6 +10,9 @@ class Style:
     def generate(self):
         with open(self.filename, "w") as f:
             f.write(self.content)
+
+    def clean(self):
+        Path(self.filename).unlink()
 
 
 class Ball(Style):
@@ -314,11 +321,10 @@ class PDFExport:
         self.filename = filename
 
     def export(self, pathname):
-        bash_command = r"""
-        pdflatex FILEROOT.tex > /dev/null 2>&1
+        bash_command = r"""pdflatex -shell-escape FILEROOT.tex >/dev/null"""
 
-        rm *.aux *.log *.tex *.sty
-        """
+        if platform != "win32":
+            bash_command += """rm *.aux *.log *.tex .*sty"""
 
         bash_command = bash_command.replace("FILEROOT", pathname)
 

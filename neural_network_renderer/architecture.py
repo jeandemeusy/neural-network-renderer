@@ -50,10 +50,10 @@ class Architecture:
         Path("to_pdf.sh").unlink()
 
         if platform == "linux" or platform == "linux2":
-            subprocess.Popen(["xdg-open", f"{pathname}.pdf"])
+            subprocess.Popen(f"xdg-open {pathname}.pdf", shell=True).wait()
         elif platform == "darwin":
-            subprocess.Popen(["open", f"{pathname}.pdf"])
+            subprocess.Popen(f"open {pathname}.pdf", shell=True).wait()
         elif platform == "win32":
-            subprocess.Popen(["start", f"{pathname}.pdf"])
+            subprocess.Popen(f"start {pathname}.pdf", shell=True).wait()
         else:
             raise EnvironmentError("Unknown platform")

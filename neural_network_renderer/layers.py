@@ -20,7 +20,7 @@ class Head(Layer):
 
     def text(self, depth_factor: float = 1.0, idx: int = None):
         text = r"""
-        \documentclass[border=8pt, multi, tikz, convert]{standalone} 
+        \documentclass[border=8pt, multi, tikz]{standalone} 
         \usepackage{import}
         \usepackage{graphicx}
         \usepackage[export]{adjustbox}
