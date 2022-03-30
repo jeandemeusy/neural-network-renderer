@@ -324,7 +324,7 @@ class PDFExport:
 
         if platform != "win32":
             bash_command = r"""pdflatex FILEROOT.tex > /dev/null 2>&1
-            rm *.aux *.log *.tex .*sty"""
+            rm *.aux *.log *.tex *.sty"""
         else:
             bash_command = r"""pdflatex -shell-escape FILEROOT.tex > /dev/null"""
 

@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="neural_network_renderer",
-    version="0.2.3",
+    version="0.2.4",
     scripts=["bin/neural_network_renderer"],
     author="Jean Demeusy",
     author_email="dev.jdu@gmail.com",
