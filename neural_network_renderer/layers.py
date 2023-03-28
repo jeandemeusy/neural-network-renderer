@@ -58,7 +58,7 @@ class Begin(Layer):
 
 
 class Input(Layer):
-    def __init__(self, pathfile, shape: list[int], to="(0,0,0)", name="temp"):
+    def __init__(self, pathfile, shape: list[int], to="(0,0,0)", name="input"):
         self.hidden_name = name
         self.pathfile = pathfile
         self.to = to
@@ -68,7 +68,11 @@ class Input(Layer):
     def text(self, depth_factor: float = 1.0, idx: int = None):
         base_text = r"""
         \node[canvas is zy plane at x=0] (NAME) at TO 
-        {\scalebox{-1}[1]{\includegraphics[width=WIDTHem, height=HEIGHTem, frame] {PATHFILE}}};
+        {
+            \scalebox{-1}[1]{
+                \includegraphics[width=WIDTHem, height=HEIGHTem, frame] {PATHFILE}
+            }
+        };
         """
         base_text = base_text.replace("NAME", self.name)
         base_text = base_text.replace("TO", self.to)
@@ -82,8 +86,8 @@ class Input(Layer):
 class Conv(Layer):
     def __init__(
         self,
-        s_filter=256,
-        n_filter=64,
+        width=256,
+        depths=64,
         name: str = None,
         offset="(0,0,0)",
         to=None,
@@ -91,13 +95,13 @@ class Conv(Layer):
         caption=" ",
     ):
         self.hidden_name = name
-        self.s_filter = s_filter
-        self.n_filter = n_filter
+        self.s_filter = width
+        self.depths = depths
         self.offset = offset
         self.to = to
-        self.width = self.s_filter
-        self.height = self.s_filter
-        self.depth = n_filter
+        self.width = width
+        self.height = width
+        self.depth = depths
         self.opacity = opacity
         self.caption = caption
 
@@ -106,10 +110,11 @@ class Conv(Layer):
         \pic[shift={OFFSET}] at TO
         {
             Box={
-                name=NAME, caption=CAPTION, xlabel={{N_FILTER, }}, zlabel=S_FILTER, opacity=OPACTIY, fill=\ConvColor, height=HEIGHT, width=WIDTH, depth=DEPTH
+                name=NAME, caption=CAPTION, opacity=OPACTIY, fill=\ConvColor, height=HEIGHT, width=WIDTH, depth=DEPTH
             }
         };
         """
+        # , xlabel={{depths, }}, zlabel=S_FILTER
         if not self.name:
             self.hidden_name = f"conv_{idx}"
 
@@ -118,8 +123,8 @@ class Conv(Layer):
         base_text = base_text.replace("OPACTIY", str(self.opacity))
         base_text = base_text.replace("OFFSET", self.offset)
         base_text = base_text.replace("TO", self.to)
-        base_text = base_text.replace("N_FILTER", str(self.n_filter))
-        base_text = base_text.replace("S_FILTER", str(self.s_filter))
+        base_text = base_text.replace("depths", str(self.depths))
+        base_text = base_text.replace("S_FILTER", str(self.width))
         base_text = base_text.replace("HEIGHT", str(self.height))
         base_text = base_text.replace("WIDTH", str(self.depth * depth_factor))
         base_text = base_text.replace("DEPTH", str(self.width))
@@ -128,9 +133,10 @@ class Conv(Layer):
 
 
 class Spacer(Layer):
-    def __init__(self, name: str = None, width: int = 15):
+    def __init__(self, name: str = None, width: int = 15, height: int = 0):
         self.hidden_name = name
         self.width = width
+        self.height = height
         self.to = None
 
     def text(self, depth_factor: float = 1.0, idx: int = None):
@@ -144,7 +150,7 @@ class Spacer(Layer):
                 zlabel= ,
                 fill=\SoftmaxColor,
                 opacity=0.0,
-                height=0.0,
+                height=HEIGHT,
                 width=WIDTH,
                 depth=0.0
             }
@@ -157,6 +163,7 @@ class Spacer(Layer):
 
         base_text = base_text.replace("NAME", self.name)
         base_text = base_text.replace("WIDTH", str(self.width))
+        base_text = base_text.replace("HEIGHT", str(self.height))
         base_text = base_text.replace("TO", self.to)
 
         return base_text
@@ -166,8 +173,8 @@ class ConvConvRelu(Layer):
     def __init__(
         self,
         # shape: list[int],
-        s_filter=256,
-        n_filter=64,
+        width=256,
+        depths=64,
         name: str = None,
         offset="(0,0,0)",
         to=None,
@@ -175,13 +182,13 @@ class ConvConvRelu(Layer):
         caption=" ",
     ):
         self.hidden_name = name
-        self.s_filter = s_filter
-        self.n_filter = ",".join([str(val) for val in n_filter])
+        self.s_filter = width
+        self.depths = ",".join([str(val) for val in depths])
         self.offset = offset
         self.to = to
-        self.width = self.s_filter
-        self.height = self.s_filter
-        self.depth = [val for val in n_filter]
+        self.width = width
+        self.height = width
+        self.depth = [val for val in depths]
         self.opacity = opacity
         self.caption = caption
 
@@ -192,7 +199,7 @@ class ConvConvRelu(Layer):
             RightBandedBox={
                 name=NAME,
                 caption=CAPTION,
-                xlabel={{ N_FILTER }},
+                xlabel={{ depths }},
                 zlabel=S_FILTER,
                 fill=\ConvColor,
                 bandfill=\ConvReluColor,
@@ -208,7 +215,7 @@ class ConvConvRelu(Layer):
 
         base_text = base_text.replace("NAME", self.name)
         base_text = base_text.replace("OFFSET", self.offset)
-        base_text = base_text.replace("N_FILTER", self.n_filter)
+        base_text = base_text.replace("depths", self.depths)
         base_text = base_text.replace("S_FILTER", str(self.s_filter))
         base_text = base_text.replace("TO", self.to)
         base_text = base_text.replace(
@@ -439,7 +446,7 @@ class Softmax(Layer):
     def __init__(
         self,
         shape: int,
-        s_filer: int = 10,
+        s_filter: int = 10,
         name: str = None,
         offset: str = "(0,0,0)",
         to: str = None,
@@ -447,7 +454,7 @@ class Softmax(Layer):
         caption: str = " ",
     ):
         self.hidden_name = name
-        self.s_filer = s_filer
+        self.s_filter = s_filter
         self.offset = offset
         self.to = to
         self.width = 2
@@ -464,7 +471,7 @@ class Softmax(Layer):
                 name=NAME,
                 caption=CAPTION,
                 xlabel={{" ","dummy"}},
-                zlabel=S_FILER,
+                zlabel=S_FILTER,
                 fill=\SoftmaxColor,
                 opacity=OPACITY,
                 height=HEIGHT,
@@ -477,7 +484,7 @@ class Softmax(Layer):
             self.hidden_name = f"softmax_{idx}"
 
         base_text = base_text.replace("NAME", self.name)
-        base_text = base_text.replace("S_FILER", str(self.s_filer))
+        base_text = base_text.replace("S_FILTER", str(self.s_filter))
         base_text = base_text.replace("OFFSET", self.offset)
         base_text = base_text.replace("TO", self.to)
         base_text = base_text.replace("WIDTH", str(self.width))
@@ -492,7 +499,7 @@ class Softmax(Layer):
 class Dense(Layer):
     def __init__(
         self,
-        s_filer: int = 10,
+        s_filter: int = 10,
         name: str = None,
         offset: str = "(0,0,0)",
         to: str = None,
@@ -500,12 +507,12 @@ class Dense(Layer):
         caption: str = " ",
     ):
         self.hidden_name = name
-        self.s_filer = s_filer
+        self.s_filter = s_filter
         self.offset = offset
         self.to = to
         self.width = 2
         self.height = 2
-        self.depth = s_filer
+        self.depth = s_filter
         self.caption = caption
         self.opacity = opacity
 
@@ -516,8 +523,6 @@ class Dense(Layer):
             Box={
                 name=NAME,
                 caption=CAPTION,
-                xlabel={{" ","dummy"}},
-                zlabel=S_FILER,
                 fill=\DenseColor,
                 opacity=OPACITY,
                 height=HEIGHT,
@@ -526,12 +531,13 @@ class Dense(Layer):
             }
         };
         """
+        # xlabel={{" ","dummy"}}, zlabel=S_FILTER,
 
         if not self.name:
             self.hidden_name = f"dense_{idx}"
 
         base_text = base_text.replace("NAME", self.name)
-        base_text = base_text.replace("S_FILER", str(self.s_filer))
+        base_text = base_text.replace("S_FILTER", str(self.s_filter))
         base_text = base_text.replace("OFFSET", self.offset)
         base_text = base_text.replace("TO", self.to)
         base_text = base_text.replace("WIDTH", str(self.width))

@@ -14,7 +14,7 @@ from .layers import (
 
 def main():
     Colors.Dense("lightgray")
-    Colors.Softmax("rgb:yellow,5;red,5;white,5")
+    Colors.Softmax("lightgray")
 
     arch = Architecture(8 / 32)
 
@@ -34,25 +34,24 @@ def main():
 
 
     # dropout
-    arch.add(Conv(width=8, depths=16, caption="Encoded features", name="encoded"))
+    arch.add(Conv(width=8, depths=16, caption="Encoded features"))
+    arch.add(Spacer(name="dropout"))
+
+    # pre-last layer
+    arch.add(Conv(width=8, depths=16))
+    arch.add(Pool([16, 16, 16]))
+    arch.add(Spacer(name="pre_last_layer"))
 
 
     # pre-last layer
-    arch.add(Dense(s_filter=32, offset="(3,0,0)", name="flatten"))
-
-    # hidden layer  
-    arch.add(Dense(s_filter=32, offset="(3,0,0)", name="hidden"))
-
-    # last layer
-    arch.add(Softmax(shape=10, s_filter=5, offset="(3,0,0)", name="output", caption="Output"))
+    arch.add(Conv(width=16, depths=32))
+    arch.add(Pool([32, 32, 32]))
 
 
-    # lines
-    arch.add(DottedLines("encoded", "flatten"))
-    arch.add(DottedLines("flatten", "hidden"))
-    arch.add(DottedLines("hidden", "output"))
 
     # output
+    arch.add(Input("assets/output.png", shape=[32, 32], to="(29,0,0)"))
+
     arch.to_pdf("output_file")
 
 
